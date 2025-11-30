@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gestão Fazenda - Protótipo</title>
+  <meta name="description" content="Protótipo dinâmico em React + Tailwind (CDN) para gestão rural." />
+  <!-- Tailwind CDN for rapid prototyping -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React + ReactDOM + Babel (for JSX in-browser prototyping) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+  <main id="root" class="min-h-screen flex items-center justify-center p-6"></main>
+
+  <!-- App (React JSX via Babel) -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function Header({onOpen}) {
+      return (
+        <header className="w-full max-w-4xl bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-green-400 rounded flex items-center justify-center text-white font-bold">GF</div>
+              <div>
+                <h1 className="text-xl font-semibold">Gestão Fazenda - Protótipo</h1>
+                <p className="text-sm text-gray-500">Registro rápido de atividades e controle de estoque</p>
+              </div>
+            </div>
+            <div>
+              <button onClick={onOpen} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Nova Atividade</button>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    function ActivityForm({onSave, onClose, initial}) {
+      const [form, setForm] = useState(initial || {type:'Campo',desc:'',insumo:'',qty:1,date:''});
+      useEffect(()=> {
+        if(!form.date) {
+          const d = new Date().toISOString().slice(0,10);
+          setForm(f=>({...f,date:d}));
+        }
+      },[]);
+
+      function setField(k,v){ setForm(f=>({...f,[k]:v})); }
+
+      return (
+        <div className="bg-white p-4 rounded shadow w-full">
+          <h3 className="font-semibold mb-2">Registrar Atividade</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-sm">Tipo</span>
+              <select value={form.type} onChange={e=>setField('type',e.target.value)} className="mt-1 w-full border rounded px-2 py-1">
+                <option>Campo</option>
+                <option>Manutenção</option>
+                <option>Estoque</option>
+                <option>Administrativo</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-sm">Data</span>
+              <input type="date" value={form.date} onChange={e=>setField('date',e.target.value)} className="mt-1 w-full border rounded px-2 py-1" />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-sm">Descrição</span>
+              <input value={form.desc} onChange={e=>setField('desc',e.target.value)} placeholder="Ex.: Pulverização, troca de óleo..." className="mt-1 w-full border rounded px-2 py-1" />
+            </label>
+            <label className="block">
+              <span className="text-sm">Insumo / Peça</span>
+              <input value={form.insumo} onChange={e=>setField('insumo',e.target.value)} className="mt-1 w-full border rounded px-2 py-1" />
+            </label>
+            <label className="block">
+              <span className="text-sm">Quantidade</span>
+              <input type="number" min="1" value={form.qty} onChange={e=>setField('qty',e.target.value)} className="mt-1 w-full border rounded px-2 py-1" />
+            </label>
+          </div>
+
+          <div className="mt-4 flex justify-end gap-3">
+            <button onClick={onClose} className="px-3 py-2 rounded border">Cancelar</button>
+            <button onClick={()=>{ onSave(form); }} className="px-3 py-2 bg-green-600 text-white rounded">Salvar</button>
+          </div>
+        </div>
+      );
+    }
+
+    function ActivityList({items, onEdit, onDelete}) {
+      if(items.length===0) return <p className="text-gray-500">Nenhuma atividade registrada.</p>;
+      return (
+        <div className="space-y-3">
+          {items.map((it,idx)=>(
+            <div key={idx} className="bg-white p-3 rounded shadow flex items-start justify-between">
+              <div>
+                <div className="text-sm text-gray-500">{it.date} • <strong>{it.type}</strong></div>
+                <div className="font-medium">{it.desc}</div>
+                {it.insumo && <div className="text-sm text-gray-600 mt-1">Insumo: {it.insumo} • Qtde: {it.qty}</div>}
+              </div>
+              <div className="flex flex-col gap-2">
+                <button onClick={()=>onEdit(idx)} className="text-sm text-blue-600">Editar</button>
+                <button onClick={()=>onDelete(idx)} className="text-sm text-red-600">Excluir</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function StockCard({stock, onAdjust}) {
+      return (
+        <div className="bg-white rounded shadow p-3">
+          <h4 className="font-semibold mb-2">Controle de Estoque</h4>
+          {stock.length===0 ? <p className="text-gray-500">Estoque vazio.</p> : (
+            <ul className="space-y-2">
+              {stock.map((s,idx)=>(
+                <li key={idx} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-sm text-gray-500">Disponível: {s.qty}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={()=>onAdjust(idx,1)} className="px-2 py-1 border rounded text-sm">+1</button>
+                    <button onClick={()=>onAdjust(idx,-1)} className="px-2 py-1 border rounded text-sm">-1</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+    }
+
+    function App(){
+      const [items, setItems] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('gf_items')||'[]'); } catch(e){ return []; }
+      });
+      const [stock, setStock] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('gf_stock')||'[{"name":"Fertilizante","qty":10},{"name":"Óleo de motor","qty":2}]'); } catch(e){ return []; }
+      });
+      const [open, setOpen] = useState(false);
+      const [editing, setEditing] = useState(null);
+
+      useEffect(()=> { localStorage.setItem('gf_items', JSON.stringify(items)); }, [items]);
+      useEffect(()=> { localStorage.setItem('gf_stock', JSON.stringify(stock)); }, [stock]);
+
+      function handleSave(data){
+        if(editing!==null){
+          const arr = [...items]; arr[editing]=data; setItems(arr); setEditing(null);
+        } else {
+          setItems(prev=>[data,...prev]);
+        }
+        setOpen(false);
+      }
+      function handleEdit(i){ setEditing(i); setOpen(true); }
+      function handleDelete(i){ if(confirm('Excluir essa atividade?')){ setItems(prev=>prev.filter((_,idx)=>idx!==i)); } }
+      function adjustStock(i,delta){ setStock(prev=> prev.map((s,idx)=> idx===i? {...s, qty: Math.max(0,s.qty+delta)} : s )); }
+
+      return (
+        <div className="w-full max-w-4xl">
+          <Header onOpen={()=>{ setEditing(null); setOpen(true); }} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="bg-white rounded shadow p-4">
+                <h2 className="font-semibold mb-2">Atividades Recentes</h2>
+                <ActivityList items={items} onEdit={handleEdit} onDelete={handleDelete} />
+              </div>
+
+              <div className="bg-white rounded shadow p-4">
+                <h2 className="font-semibold mb-2">Registrar Rápido</h2>
+                <div className="flex gap-2">
+                  <button onClick={()=>{ setEditing(null); setOpen(true); }} className="px-3 py-2 bg-green-600 text-white rounded">Nova Atividade</button>
+                  <button onClick={()=>{ // quick-add sample
+                      const sample = {type:'Campo',desc:'Amostragem de solo',insumo:'','qty':1,date:new Date().toISOString().slice(0,10)};
+                      setItems(prev=>[sample,...prev]);
+                    }} className="px-3 py-2 border rounded">Ação Rápida</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <StockCard stock={stock} onAdjust={adjustStock} />
+              <div className="bg-white rounded shadow p-4">
+                <h4 className="font-semibold mb-2">Resumo</h4>
+                <p className="text-sm text-gray-600">Atividades: <strong>{items.length}</strong></p>
+                <p className="text-sm text-gray-600">Itens no estoque: <strong>{stock.length}</strong></p>
+              </div>
+            </div>
+          </div>
+
+          {open && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-40">
+              <div className="w-full max-w-2xl">
+                <ActivityForm initial={editing!==null ? items[editing] : undefined} onSave={handleSave} onClose={()=>{ setOpen(false); setEditing(null); }} />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
